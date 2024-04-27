@@ -1,5 +1,5 @@
 import { Box, Flex } from "@chakra-ui/react";
-import { PAINT_DRAW_OPTIONS } from "../ExcaliDraw/ExcaliDraw.constants";
+import { PAINT_DRAW_OPTIONS } from "../../constants";
 import { IconButton } from "../IconButton";
 
 export default function ActionButtons() {
@@ -11,7 +11,7 @@ export default function ActionButtons() {
       borderRadius="md"
       p={1}
     >
-      <Flex gap={1}>
+      <Flex gap={2}>
         {PAINT_DRAW_OPTIONS.map(({ label, icon, id, keyBind }) => (
           <IconButton
             label={label}
@@ -19,6 +19,7 @@ export default function ActionButtons() {
             isSelected={false}
             keyBind={keyBind}
             onClick={() => {}}
+            baseBg="none"
           />
         ))}
       </Flex>

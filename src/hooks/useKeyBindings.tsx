@@ -1,7 +1,7 @@
 import { useEffect } from "react";
-import { DrawAction } from "./ExcaliDraw.constants";
+import { DrawAction } from "../constants";
 
-export const usePaintKeyBindings = ({
+export const useKeyBindings = ({
   onAction,
   isWritingInProgress,
 }: {

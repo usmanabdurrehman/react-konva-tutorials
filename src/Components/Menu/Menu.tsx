@@ -1,5 +1,11 @@
-import { IconButton } from "@chakra-ui/react";
-import React from "react";
+import {
+  Button,
+  IconButton,
+  Popover,
+  PopoverArrow,
+  PopoverContent,
+  PopoverTrigger,
+} from "@chakra-ui/react";
 import { Hamburger } from "../../icons";
 
 export default function Menu() {
@@ -7,9 +13,18 @@ export default function Menu() {
     <IconButton
       aria-label={"menu"}
       icon={<Hamburger />}
-      size="md"
+      size="sm"
       fontSize="xs"
       transition={"none"}
     />
   );
 }
+
+<Popover>
+  <PopoverTrigger>
+    <Button>Trigger</Button>
+  </PopoverTrigger>
+  <PopoverContent>
+    <PopoverArrow />
+  </PopoverContent>
+</Popover>;

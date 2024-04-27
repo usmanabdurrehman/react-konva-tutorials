@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
-import { Circle, Scribble, Rectangle, Arrow, Text } from "./Paint.types";
-import { downloadURI } from "./Paint.utilities";
-export const usePaintStoreProgress = ({
+import { Circle, Scribble, Rectangle, Arrow, Text } from "../types";
+import { downloadURI } from "../utilities";
+export const useStoreProgress = ({
   setTexts,
   setArrows,
   setRectangles,

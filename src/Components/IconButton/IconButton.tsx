@@ -6,12 +6,14 @@ export const IconButton = ({
   keyBind,
   label,
   onClick,
+  baseBg,
 }: {
   icon: JSX.Element;
   isSelected?: boolean;
   keyBind?: string;
   label: string;
   onClick?: () => void;
+  baseBg?: string;
 }) => {
   return (
     <Box pos="relative">
@@ -19,19 +21,19 @@ export const IconButton = ({
         aria-label={label}
         title={label}
         icon={icon}
-        size="md"
+        size="sm"
         fontSize="xs"
-        bg={isSelected ? "#e0dfff" : "none"}
+        bg={isSelected ? "#e0dfff" : baseBg}
         color={isSelected ? "#4440bf" : "black"}
         transition={"none"}
         onClick={onClick}
       />
       {keyBind && (
         <Text
-          fontSize="x-small"
+          fontSize="xx-small"
           pos="absolute"
-          bottom="2px"
-          right="3px"
+          bottom="1px"
+          right="1px"
           color={isSelected ? "#4440bf" : "#aaa"}
         >
           {keyBind}
