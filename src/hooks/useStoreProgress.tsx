@@ -49,7 +49,7 @@ export const useStoreProgress = ({
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => {
       timeoutRef.current = null;
-      storeDrawingState();
+      // storeDrawingState();
     }, 1200);
   }, [storeDrawingState]);
 

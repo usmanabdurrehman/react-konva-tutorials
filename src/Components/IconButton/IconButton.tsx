@@ -1,4 +1,5 @@
 import { Box, IconButton as ChakraIconButton, Text } from "@chakra-ui/react";
+import React from "react";
 
 export const IconButton = ({
   icon,
@@ -20,7 +21,7 @@ export const IconButton = ({
       <ChakraIconButton
         aria-label={label}
         title={label}
-        icon={icon}
+        icon={React.cloneElement(icon, { isSelected })}
         size="sm"
         fontSize="xs"
         bg={isSelected ? "#e0dfff" : baseBg}

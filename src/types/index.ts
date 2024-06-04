@@ -12,6 +12,7 @@ export type Rectangle = Shape & {
   height: number;
   x: number;
   y: number;
+  isDiamond: boolean;
 };
 
 export type Circle = Shape & {
@@ -22,7 +23,6 @@ export type Circle = Shape & {
 
 export type Scribble = Shape & {
   points: number[];
-  isBrush: boolean;
 };
 
 export type Arrow = Shape & {
@@ -31,4 +31,8 @@ export type Arrow = Shape & {
 
 export type Text = Shape & {
   text: string;
+};
+
+export type IconProps = {
+  isSelected?: boolean;
 };

@@ -19,6 +19,7 @@ import {
   Trash,
   RoundEdges,
   SharpEdges,
+  Diamond,
 } from "../icons";
 
 export enum DrawAction {
@@ -60,7 +61,7 @@ export const PAINT_DRAW_OPTIONS = [
   {
     id: DrawAction.Diamond,
     label: "Diamond--D or 3",
-    icon: <Rectangle />,
+    icon: <Diamond />,
     keyBind: "3",
   },
   {
@@ -181,7 +182,7 @@ export const SHAPE_EDGES_OPTIONS = [
   },
 ];
 
-enum MiscActions {
+export enum MiscActions {
   Duplicate = "Duplicate",
   Delete = "Delete",
   Link = "Link",
@@ -213,4 +214,14 @@ export enum CanvasAction {
   Delete = "delete",
   Resize = "resize",
   Drag = "drag",
+}
+
+export const ICON_FILL_COLOR = "#030064";
+
+export enum SecondaryAction {
+  Undo = "undo",
+  Redo = "redo",
+  ZoomIn = "zoomIn",
+  ZoomOut = "zoomOut",
+  ResetZoom = "resetZoom",
 }

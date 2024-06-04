@@ -8,6 +8,7 @@ import {
   Text,
 } from "@chakra-ui/react";
 import {
+  MiscActions,
   MISC_ACTIONS_OPTIONS,
   SHAPE_EDGES_OPTIONS,
   SHAPE_FILL_OPTIONS,
@@ -16,9 +17,20 @@ import {
 } from "../../constants";
 import { IconButton } from "../IconButton";
 
-export default function Options() {
+interface OptionsProps {
+  onAction: (action: MiscActions) => void;
+  onShapeAction: (payload: any) => void;
+}
+
+export default function Options({ onAction, onShapeAction }: OptionsProps) {
   return (
-    <Box borderRadius={"md"} width="200px" border="1px solid #ddd" p={3}>
+    <Box
+      borderRadius={"md"}
+      width="200px"
+      border="1px solid #ddd"
+      p={3}
+      bg="white"
+    >
       <Text fontSize="x-small">Stroke</Text>
       <Text fontSize="x-small" mt={3}>
         Fill
@@ -75,7 +87,7 @@ export default function Options() {
       </Text>
       <Flex mt={1} gap={2}>
         {MISC_ACTIONS_OPTIONS.map(({ id, label, icon }) => (
-          <IconButton label={label} icon={icon} />
+          <IconButton label={label} icon={icon} onClick={() => onAction(id)} />
         ))}
       </Flex>
     </Box>

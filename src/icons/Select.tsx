@@ -1,6 +1,8 @@
 import React from "react";
+import { IconProps } from "../types";
+import { getIconColorProps } from "../utilities";
 
-export default function Select() {
+export default function Select({ isSelected }: IconProps) {
   return (
     <svg
       aria-hidden="true"
@@ -8,8 +10,8 @@ export default function Select() {
       role="img"
       viewBox="0 0 22 22"
       className=""
-      fill="none"
       stroke-width="1.25"
+      {...getIconColorProps(isSelected)}
     >
       <g stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
         <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
