@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function Arrow() {
+export default function SendToFront() {
   return (
     <svg
       aria-hidden="true"
@@ -12,12 +12,14 @@ export default function Arrow() {
       stroke="currentColor"
       stroke-linecap="round"
       stroke-linejoin="round"
+      style={{ transform: "rotate(180deg)" }}
     >
       <g stroke-width="1.5">
         <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-        <line x1="5" y1="12" x2="19" y2="12"></line>
-        <line x1="15" y1="16" x2="19" y2="12"></line>
-        <line x1="15" y1="8" x2="19" y2="12"></line>
+        <path d="M12 10l0 10"></path>
+        <path d="M12 10l4 4"></path>
+        <path d="M12 10l-4 4"></path>
+        <path d="M4 4l16 0"></path>
       </g>
     </svg>
   );

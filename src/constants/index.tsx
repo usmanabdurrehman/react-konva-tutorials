@@ -20,6 +20,10 @@ import {
   RoundEdges,
   SharpEdges,
   Diamond,
+  SendToBack,
+  SendBackward,
+  SendForward,
+  SendToFront,
 } from "../icons";
 
 export enum DrawAction {
@@ -116,10 +120,10 @@ export const SHAPE_FILL_OPTIONS = [
   },
 ];
 
-enum StrokeWidth {
-  Thin = "Thin",
-  Bold = "Bold",
-  ExtraBold = "ExtraBold",
+export enum StrokeWidth {
+  Thin = 1,
+  Bold = 2,
+  ExtraBold = 4,
 }
 
 export const STROKE_WIDTH_OPTIONS = [
@@ -140,10 +144,10 @@ export const STROKE_WIDTH_OPTIONS = [
   },
 ];
 
-enum StrokeStyle {
-  Solid = "Solid",
-  Dashed = "Dashed",
-  Dotted = "Dotted",
+export enum StrokeStyle {
+  Solid = "",
+  Dashed = "5 3",
+  Dotted = "2 3",
 }
 
 export const STROKE_STYLE_OPTIONS = [
@@ -164,9 +168,9 @@ export const STROKE_STYLE_OPTIONS = [
   },
 ];
 
-enum ShapeEdges {
-  Sharp = "Sharp",
-  Round = "Round",
+export enum ShapeEdges {
+  Sharp = 0,
+  Round = 12,
 }
 
 export const SHAPE_EDGES_OPTIONS = [
@@ -203,6 +207,36 @@ export const MISC_ACTIONS_OPTIONS = [
     id: MiscActions.Link,
     label: "Link",
     icon: <Link />,
+  },
+];
+
+export enum LayerOptions {
+  SendBackward = "sendBackward",
+  SendToBack = "sendToBack",
+  SendForward = "sendForward",
+  SendToFront = "sendToFront",
+}
+
+export const LAYER_OPTIONS = [
+  {
+    id: LayerOptions.SendToBack,
+    label: "Send to back",
+    icon: <SendToBack />,
+  },
+  {
+    id: LayerOptions.SendBackward,
+    label: "Send backward",
+    icon: <SendBackward />,
+  },
+  {
+    id: LayerOptions.SendForward,
+    label: "Send forward",
+    icon: <SendForward />,
+  },
+  {
+    id: LayerOptions.SendToFront,
+    label: "Send to front",
+    icon: <SendToFront />,
   },
 ];
 

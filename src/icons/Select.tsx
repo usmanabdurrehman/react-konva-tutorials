@@ -9,7 +9,6 @@ export default function Select({ isSelected }: IconProps) {
       focusable="false"
       role="img"
       viewBox="0 0 22 22"
-      className=""
       stroke-width="1.25"
       {...getIconColorProps(isSelected)}
     >

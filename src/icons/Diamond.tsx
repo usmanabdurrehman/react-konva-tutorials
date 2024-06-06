@@ -9,7 +9,6 @@ export default function Diamond({ isSelected }: IconProps) {
       focusable="false"
       role="img"
       viewBox="0 0 24 24"
-      className=""
       stroke-width="2"
       stroke-linecap="round"
       stroke-linejoin="round"

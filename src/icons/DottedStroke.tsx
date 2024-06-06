@@ -7,7 +7,6 @@ export default function DottedStroke() {
       focusable="false"
       role="img"
       viewBox="0 0 24 24"
-      className=""
       fill="none"
       stroke-width="2"
       stroke="currentColor"

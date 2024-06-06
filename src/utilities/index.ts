@@ -15,3 +15,11 @@ export const getIconColorProps = (isSelected: boolean | undefined) => ({
   fill: isSelected ? ICON_FILL_COLOR : "none",
   stroke: isSelected ? ICON_FILL_COLOR : "currentColor",
 });
+
+export const reorderArray = <T>(arr: T[], from: number, to: number): T[] => {
+  if (to < 0 || to > arr.length - 1) return arr;
+  const newArr = [...arr];
+  const item = newArr.splice(from, 1);
+  newArr.splice(to, 0, item[0]);
+  return newArr;
+};

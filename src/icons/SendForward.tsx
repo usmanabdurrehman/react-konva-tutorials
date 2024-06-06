@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function Arrow() {
+export default function SendForward() {
   return (
     <svg
       aria-hidden="true"
@@ -15,9 +15,9 @@ export default function Arrow() {
     >
       <g stroke-width="1.5">
         <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-        <line x1="5" y1="12" x2="19" y2="12"></line>
-        <line x1="15" y1="16" x2="19" y2="12"></line>
-        <line x1="15" y1="8" x2="19" y2="12"></line>
+        <path d="M12 5l0 14"></path>
+        <path d="M16 9l-4 -4"></path>
+        <path d="M8 9l4 -4"></path>
       </g>
     </svg>
   );

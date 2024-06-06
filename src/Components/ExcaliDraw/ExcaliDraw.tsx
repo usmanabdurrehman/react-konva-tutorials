@@ -15,12 +15,13 @@ import {
 import {
   CanvasAction,
   DrawAction,
+  LayerOptions,
   MiscActions,
   SCALE_BY,
   SecondaryAction,
 } from "../../constants";
 import { Arrow, Circle, Rectangle, Scribble, Shape, Text } from "../../types";
-import { downloadURI, getNumericVal } from "../../utilities";
+import { downloadURI, getNumericVal, reorderArray } from "../../utilities";
 import { ActionButtons } from "../ActionButtons";
 import { Menu } from "../Menu";
 import { Options } from "../Options";
@@ -51,6 +52,7 @@ export const ExcaliDraw: React.FC<ExcaliDrawProps> = React.memo(
     const [arrows, setArrows] = useState<ArrowConfig[]>([]);
     const [texts, setTexts] = useState<Text[]>([]);
     const [images, setImages] = useState<HTMLImageElement[]>([]);
+    const [drawings, setDrawings] = useState<NodeConfig[]>([]);
     const [currentlyDrawnShape, setCurrentlyDrawnShape] =
       useState<NodeConfig>();
 
@@ -144,6 +146,7 @@ export const ExcaliDraw: React.FC<ExcaliDrawProps> = React.memo(
       type: DrawAction;
       id: string;
       node: Node<NodeConfig>;
+      props?: NodeConfig;
     }>();
 
     const deSelect = useCallback(() => {
@@ -165,115 +168,115 @@ export const ExcaliDraw: React.FC<ExcaliDrawProps> = React.memo(
 
     const onStageMouseUp = useCallback(() => {
       isPaintRef.current = false;
-      const { setter } = getSetterByType(drawAction);
-      if (setter)
-        setter((prevRecords) => [...prevRecords, currentlyDrawnShape]);
+      // const { setter } = getSetterByType(drawAction);
+      // if (setter)
+      //   setter((prevRecords) => [...prevRecords, currentlyDrawnShape]);
+      if (currentlyDrawnShape)
+        setDrawings((prevDrawings) => [...prevDrawings, currentlyDrawnShape]);
       setCurrentlyDrawnShape(undefined);
     }, [currentlyDrawnShape, drawAction]);
 
-    const onStageMouseDown = useCallback(
-      (e: KonvaEventObject<MouseEvent>) => {
-        checkDeselect(e);
+    const updateCurrentDrawnShape = <T,>(updaterFn: (payload: T) => T) => {
+      setCurrentlyDrawnShape((prevDrawnShape) => {
+        return {
+          ...(prevDrawnShape || {}),
+          ...updaterFn(prevDrawnShape as T),
+        };
+      });
+    };
 
-        if (drawAction === DrawAction.Select) return;
-        isPaintRef.current = true;
-        const stage = stageRef?.current;
-        const pos = stage?.getPointerPosition();
-        const x = getNumericVal(pos?.x) - stageX;
-        const y = getNumericVal(pos?.y) - stageY;
-        const id = uuidv4();
-        currentShapeRef.current = id;
+    const onStageMouseDown = (e: KonvaEventObject<MouseEvent>) => {
+      checkDeselect(e);
 
-        const shouldUpdateCanvasHistory = [
-          DrawAction.Arrow,
-          DrawAction.Circle,
-          DrawAction.Rectangle,
-          DrawAction.Scribble,
-          DrawAction.Text,
-        ].includes(drawAction);
+      if (drawAction === DrawAction.Select) return;
+      isPaintRef.current = true;
+      const stage = stageRef?.current;
+      const pos = stage?.getPointerPosition();
+      const x = getNumericVal(pos?.x) - stageX;
+      const y = getNumericVal(pos?.y) - stageY;
+      const id = uuidv4();
+      currentShapeRef.current = id;
 
-        shouldUpdateCanvasHistory &&
-          setCanvasHistory((prevCanvasHistory) => [
-            ...prevCanvasHistory,
-            { type: CanvasAction.Add, drawAction, payload: { id } },
-          ]);
+      const shouldUpdateCanvasHistory = [
+        DrawAction.Arrow,
+        DrawAction.Circle,
+        DrawAction.Rectangle,
+        DrawAction.Scribble,
+        DrawAction.Text,
+      ].includes(drawAction);
 
-        switch (drawAction) {
-          case DrawAction.Text: {
-            onBlurTextField();
-            setTextPosition({ x, y });
-            break;
-          }
-          case DrawAction.Scribble:
-            setCurrentlyDrawnShape({
-              id,
-              points: [x, y, x, y],
-              color,
-              scaleX: 1,
-              scaleY: 1,
-              stroke: color,
-              name: DrawAction.Scribble,
-            } as LineConfig);
+      shouldUpdateCanvasHistory &&
+        setCanvasHistory((prevCanvasHistory) => [
+          ...prevCanvasHistory,
+          { type: CanvasAction.Add, drawAction, payload: { id } },
+        ]);
 
-            break;
-          case DrawAction.Circle: {
-            setCurrentlyDrawnShape({
-              id,
-              radius: 1,
-              x,
-              y,
-              color,
-              scaleX: 1,
-              scaleY: 1,
-              stroke: color,
-              name: DrawAction.Circle,
-            } as CircleConfig);
-            break;
-          }
-
-          case DrawAction.Rectangle:
-          case DrawAction.Diamond: {
-            setCurrentlyDrawnShape({
-              height: 1,
-              width: 1,
-              x,
-              y,
-              color,
-              scaleX: 1,
-              scaleY: 1,
-              stroke: color,
-              id,
-              rotationDeg: drawAction === DrawAction.Diamond ? 45 : 0,
-              name: DrawAction.Rectangle,
-            } as RectConfig);
-            break;
-          }
-          case DrawAction.Arrow: {
-            setCurrentlyDrawnShape({
-              id,
-              points: [x, y, x, y],
-              fill: color,
-              stroke: color,
-              scaleX: 1,
-              scaleY: 1,
-              name: DrawAction.Arrow,
-            });
-            break;
-          }
+      switch (drawAction) {
+        case DrawAction.Text: {
+          onBlurTextField();
+          setTextPosition({ x, y });
+          break;
         }
-      },
-      [
-        checkDeselect,
-        drawAction,
-        color,
-        stageRef,
-        stageX,
-        stageY,
-        onBlurTextField,
-      ]
-    );
+        case DrawAction.Scribble:
+          updateCurrentDrawnShape<LineConfig>(() => ({
+            id,
+            points: [x, y, x, y],
+            color,
+            scaleX: 1,
+            scaleY: 1,
+            stroke: color,
+            name: DrawAction.Scribble,
+          }));
 
-    const onStageMouseMove = useCallback(() => {
+          break;
+        case DrawAction.Circle: {
+          updateCurrentDrawnShape<CircleConfig>(() => ({
+            id,
+            radius: 1,
+            x,
+            y,
+            color,
+            scaleX: 1,
+            scaleY: 1,
+            stroke: color,
+            name: DrawAction.Circle,
+          }));
+          break;
+        }
+
+        case DrawAction.Rectangle:
+        case DrawAction.Diamond: {
+          updateCurrentDrawnShape<RectConfig>(() => ({
+            height: 1,
+            width: 1,
+            x,
+            y,
+            color,
+            scaleX: 1,
+            scaleY: 1,
+            stroke: color,
+            id,
+            rotationDeg: drawAction === DrawAction.Diamond ? 45 : 0,
+            name: DrawAction.Rectangle,
+          }));
+          break;
+        }
+        case DrawAction.Arrow: {
+          updateCurrentDrawnShape<ArrowConfig>(() => ({
+            id,
+            points: [x, y, x, y],
+            fill: color,
+            stroke: color,
+            scaleX: 1,
+            scaleY: 1,
+            name: DrawAction.Arrow,
+          }));
+          break;
+        }
+      }
+    };
+
+    const onStageMouseMove = () => {
       if (drawAction === DrawAction.Select || !isPaintRef.current) return;
 
       const stage = stageRef?.current;
@@ -284,77 +287,59 @@ export const ExcaliDraw: React.FC<ExcaliDrawProps> = React.memo(
 
       switch (drawAction) {
         case DrawAction.Scribble: {
-          setCurrentlyDrawnShape((prevScribble) => {
-            if (!prevScribble) return undefined;
-            return {
-              ...prevScribble,
-              points: [...(prevScribble as Scribble).points, x, y],
-            };
-          });
+          updateCurrentDrawnShape<LineConfig>((prevScribble) => ({
+            points: [...(prevScribble.points || []), x, y],
+          }));
 
           break;
         }
         case DrawAction.Circle: {
-          setCurrentlyDrawnShape((prevCircle) => {
-            if (!prevCircle) return undefined;
-            return {
-              ...prevCircle,
-              radius:
-                ((x - (prevCircle as Circle).x) ** 2 +
-                  (y - (prevCircle as Circle).y) ** 2) **
-                0.5,
-            };
-          });
+          updateCurrentDrawnShape<CircleConfig>((prevCircle) => ({
+            radius:
+              ((x - (prevCircle.x || 0)) ** 2 +
+                (y - (prevCircle.y || 0)) ** 2) **
+              0.5,
+          }));
+
           break;
         }
         case DrawAction.Rectangle: {
-          setCurrentlyDrawnShape((prevRectangle) => {
-            if (!prevRectangle) return undefined;
-            return {
-              ...prevRectangle,
-              height: y - (prevRectangle as Rectangle).y,
-              width: x - (prevRectangle as Rectangle).x,
-            };
-          });
+          updateCurrentDrawnShape<RectConfig>((prevRectangle) => ({
+            height: y - (prevRectangle.y || 0),
+            width: x - (prevRectangle.x || 0),
+          }));
           break;
         }
         case DrawAction.Diamond: {
           break;
         }
         case DrawAction.Arrow: {
-          setCurrentlyDrawnShape((prevArrow) => {
-            if (!prevArrow) return undefined;
-            return {
-              ...prevArrow,
-              points: [
-                (prevArrow as Arrow)?.points[0],
-                (prevArrow as Arrow)?.points[1],
-                x,
-                y,
-              ],
-            };
-          });
+          updateCurrentDrawnShape<ArrowConfig>((prevArrow) => ({
+            points: [prevArrow?.points[0], prevArrow?.points[1], x, y],
+          }));
 
           break;
         }
       }
-    }, [drawAction, stageRef, stageX, stageY]);
+    };
 
-    console.log({ currentlyDrawnShape });
+    console.log({ currentSelectedShape, drawings });
 
-    const onShapeClick = useCallback(
-      (e: KonvaEventObject<MouseEvent>) => {
-        if (drawAction !== DrawAction.Select) return;
-        const currentTarget = e.currentTarget;
-        setCurrentSelectedShape({
-          type: currentTarget?.attrs?.name,
-          id: currentTarget?.attrs?.id,
-          node: currentTarget,
-        });
-        transformerRef?.current?.node(currentTarget);
-      },
-      [drawAction]
-    );
+    const onShapeClick = (e: KonvaEventObject<MouseEvent>) => {
+      if (drawAction !== DrawAction.Select) return;
+      const currentTarget = e.currentTarget;
+
+      const type = currentTarget?.attrs?.name;
+      const id = currentTarget?.attrs?.id;
+      const records = getRecordsByType(type);
+      setCurrentSelectedShape({
+        type,
+        id,
+        node: currentTarget,
+        props: records?.find((record) => record.id === id),
+      });
+      transformerRef?.current?.node(currentTarget);
+    };
 
     const isDraggable = drawAction === DrawAction.Select;
     const isStageDraggable = drawAction === DrawAction.Move;
@@ -706,6 +691,8 @@ export const ExcaliDraw: React.FC<ExcaliDrawProps> = React.memo(
       // TODO: update currentSelectedShape to duplicated shape
     };
 
+    // console.log({ diagrams });
+
     return (
       <Box ref={containerRef} pos="relative" height="100vh" width="100vw">
         <Flex
@@ -727,6 +714,7 @@ export const ExcaliDraw: React.FC<ExcaliDrawProps> = React.memo(
         {currentSelectedShape && (
           <Box zIndex={1} left={4} pos="absolute" top="90px">
             <Options
+              type={currentSelectedShape.type}
               onAction={(action) => {
                 switch (action) {
                   case MiscActions.Delete: {
@@ -742,7 +730,53 @@ export const ExcaliDraw: React.FC<ExcaliDrawProps> = React.memo(
                   }
                 }
               }}
-              onShapeAction={() => {}}
+              nodeAttrs={currentSelectedShape.props}
+              onShapeAction={(payload) => {
+                const { setter } = getSetterByType(currentSelectedShape?.type);
+                setCurrentSelectedShape((prevSelectedShape) => ({
+                  ...currentSelectedShape,
+                  props: { ...(currentSelectedShape || {})?.props, ...payload },
+                }));
+
+                setDrawings((prevRecords) =>
+                  prevRecords.map((record) =>
+                    record.id === currentSelectedShape?.id
+                      ? { ...record, ...payload }
+                      : record
+                  )
+                );
+              }}
+              onLayerChange={(action) => {
+                const drawingIndex = drawings?.findIndex(
+                  (drawing) => drawing.id === currentSelectedShape?.id
+                );
+                switch (action) {
+                  case LayerOptions.SendToBack: {
+                    setDrawings((drawings) =>
+                      reorderArray(drawings, drawingIndex, 0)
+                    );
+                    break;
+                  }
+                  case LayerOptions.SendBackward: {
+                    setDrawings((drawings) =>
+                      reorderArray(drawings, drawingIndex, drawingIndex - 1)
+                    );
+                    break;
+                  }
+                  case LayerOptions.SendForward: {
+                    setDrawings((drawings) =>
+                      reorderArray(drawings, drawingIndex, drawingIndex + 1)
+                    );
+                    break;
+                  }
+                  case LayerOptions.SendToFront: {
+                    setDrawings((drawings) =>
+                      reorderArray(drawings, drawingIndex, drawings?.length - 1)
+                    );
+                    break;
+                  }
+                }
+              }}
             />
           </Box>
         )}
@@ -768,11 +802,25 @@ export const ExcaliDraw: React.FC<ExcaliDrawProps> = React.memo(
         >
           <Layer>
             <KonvaRect
+              height={140}
+              width={137}
+              stroke="#000"
+              fill="red"
+              draggable
+            />
+            <KonvaCircle radius={84} stroke="#000" fill="green" draggable />
+            <KonvaRect
+              height={174}
+              width={167}
+              stroke="#000"
+              fill="blue"
+              draggable
+            />
+
+            <KonvaRect
               ref={backgroundRef}
               x={0}
               y={0}
-              // height={CANVAS_HEIGHT}
-              // width={CANVAS_WIDTH}
               fill={"white"}
               id="bg"
               listening={false}
@@ -783,56 +831,39 @@ export const ExcaliDraw: React.FC<ExcaliDrawProps> = React.memo(
                 image={image}
                 x={0}
                 y={0}
-                // height={CANVAS_WIDTH / 2}
-                // width={CANVAS_WIDTH / 2}
                 onClick={onShapeClick}
                 draggable={isDraggable}
                 name="image"
               />
             ))}
-            {rectangles?.map((rectangle) => (
-              <KonvaRect {...rectangle} {...getShapeProps(rectangle)} />
-            ))}
-            {currentlyDrawnShape?.name === DrawAction.Rectangle && (
-              <KonvaRect
-                {...currentlyDrawnShape}
-                {...getShapeProps(currentlyDrawnShape)}
-              />
-            )}
-            {circles?.map((circle) => (
-              <KonvaCircle {...circle} {...getShapeProps(circle)} />
-            ))}
-            {currentlyDrawnShape?.name === DrawAction.Circle && (
-              <KonvaCircle
-                {...currentlyDrawnShape}
-                {...getShapeProps(currentlyDrawnShape)}
-              />
-            )}
-            {scribbles.map((scribble) => (
-              <KonvaLine
-                lineCap="round"
-                lineJoin="round"
-                {...scribble}
-                {...getShapeProps(scribble)}
-              />
-            ))}
-            {currentlyDrawnShape?.name === DrawAction.Scribble && (
-              <KonvaLine
-                lineCap="round"
-                lineJoin="round"
-                {...(currentlyDrawnShape as LineConfig)}
-                {...getShapeProps(currentlyDrawnShape)}
-              />
-            )}
-            {arrows.map((arrow) => (
-              <KonvaArrow {...arrow} {...getShapeProps(arrow)} />
-            ))}
-            {currentlyDrawnShape?.name === DrawAction.Arrow && (
-              <KonvaArrow
-                {...(currentlyDrawnShape as ArrowConfig)}
-                {...getShapeProps(currentlyDrawnShape)}
-              />
-            )}
+            {[...drawings, currentlyDrawnShape].map((drawing) => {
+              if (drawing?.name === DrawAction.Rectangle) {
+                return <KonvaRect {...drawing} {...getShapeProps(drawing)} />;
+              }
+              if (drawing?.name === DrawAction.Circle) {
+                return <KonvaCircle {...drawing} {...getShapeProps(drawing)} />;
+              }
+              if (drawing?.name === DrawAction.Scribble) {
+                return (
+                  <KonvaLine
+                    lineCap="round"
+                    lineJoin="round"
+                    {...drawing}
+                    {...getShapeProps(drawing)}
+                  />
+                );
+              }
+              if (drawing?.name === DrawAction.Arrow) {
+                return (
+                  <KonvaArrow
+                    {...(drawing as ArrowConfig)}
+                    {...getShapeProps(drawing)}
+                  />
+                );
+              }
+              return null;
+            })}
+
             {texts.map((text) => (
               <KonvaText
                 name={DrawAction.Text}

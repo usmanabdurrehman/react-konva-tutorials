@@ -1,30 +1,30 @@
 import {
-  Button,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  MenuItemOption,
+  MenuGroup,
+  MenuOptionGroup,
+  MenuDivider,
   IconButton,
-  Popover,
-  PopoverArrow,
-  PopoverContent,
-  PopoverTrigger,
 } from "@chakra-ui/react";
 import { Hamburger } from "../../icons";
 
-export default function Menu() {
+export default function MenuBtn() {
   return (
-    <IconButton
-      aria-label={"menu"}
-      icon={<Hamburger />}
-      size="sm"
-      fontSize="xs"
-      transition={"none"}
-    />
+    <Menu>
+      <MenuButton
+        as={IconButton}
+        aria-label="Options"
+        icon={<Hamburger />}
+        variant="outline"
+      />
+      <MenuList>
+        <MenuItem icon={<></>} command="⌘T">
+          New Tab
+        </MenuItem>
+      </MenuList>
+    </Menu>
   );
 }
-
-<Popover>
-  <PopoverTrigger>
-    <Button>Trigger</Button>
-  </PopoverTrigger>
-  <PopoverContent>
-    <PopoverArrow />
-  </PopoverContent>
-</Popover>;

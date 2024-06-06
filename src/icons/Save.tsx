@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function MediumStrokeWidth() {
+export default function Save() {
   return (
     <svg
       aria-hidden="true"
@@ -13,11 +13,8 @@ export default function MediumStrokeWidth() {
       stroke-linejoin="round"
     >
       <path
-        d="M4.167 10h11.666"
-        stroke="currentColor"
         stroke-width="1.25"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        d="M3.333 14.167v1.666c0 .92.747 1.667 1.667 1.667h10c.92 0 1.667-.746 1.667-1.667v-1.666M5.833 9.167 10 13.333l4.167-4.166M10 3.333v10"
       ></path>
     </svg>
   );

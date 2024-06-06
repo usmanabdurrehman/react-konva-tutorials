@@ -7,7 +7,6 @@ export default function Minimize() {
       focusable="false"
       role="img"
       viewBox="0 0 20 20"
-      className=""
       fill="none"
       stroke="currentColor"
       stroke-linecap="round"

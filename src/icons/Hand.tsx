@@ -5,7 +5,6 @@ export default function Hand() {
       focusable="false"
       role="img"
       viewBox="0 0 24 24"
-      className=""
       fill="none"
       stroke-width="2"
       stroke="currentColor"
