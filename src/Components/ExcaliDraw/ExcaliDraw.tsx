@@ -802,16 +802,19 @@ export const ExcaliDraw: React.FC<ExcaliDrawProps> = React.memo(
         >
           <Layer>
             <KonvaRect
-              height={140}
-              width={137}
+              {...{ x: 205, y: 193, height: 140, width: 137 }}
               stroke="#000"
               fill="red"
               draggable
             />
-            <KonvaCircle radius={84} stroke="#000" fill="green" draggable />
+            <KonvaCircle
+              {...{ x: 357, y: 238, radius: 84 }}
+              stroke="#000"
+              fill="green"
+              draggable
+            />
             <KonvaRect
-              height={174}
-              width={167}
+              {...{ x: 232, y: 255, height: 174, width: 167 }}
               stroke="#000"
               fill="blue"
               draggable
