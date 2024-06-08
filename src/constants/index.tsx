@@ -1,24 +1,13 @@
 import {
   Arrow,
-  BoldStrokeWidth,
   Circle,
-  DashedStroke,
-  DottedStroke,
-  Duplicate,
   Eraser,
   Hand,
   Line,
-  Link,
-  MediumStrokeWidth,
   Pencil,
   Rectangle,
   Select,
-  SolidStroke,
   Text,
-  ThinStrokeWidth,
-  Trash,
-  RoundEdges,
-  SharpEdges,
   Diamond,
   SendToBack,
   SendBackward,
@@ -96,120 +85,6 @@ export const PAINT_DRAW_OPTIONS = [
   },
 ];
 
-enum ShapeFill {
-  Hachure = "Hachure",
-  CrossHatch = "CrossHatch",
-  Solid = "Solid",
-}
-
-export const SHAPE_FILL_OPTIONS = [
-  {
-    id: ShapeFill.Hachure,
-    label: "Hachure",
-    icon: <Hand />,
-  },
-  {
-    id: ShapeFill.CrossHatch,
-    label: "Cross-Hatch",
-    icon: <Hand />,
-  },
-  {
-    id: ShapeFill.Solid,
-    label: "Solid",
-    icon: <Hand />,
-  },
-];
-
-export enum StrokeWidth {
-  Thin = 1,
-  Bold = 2,
-  ExtraBold = 4,
-}
-
-export const STROKE_WIDTH_OPTIONS = [
-  {
-    id: StrokeWidth.Thin,
-    label: "Thin",
-    icon: <ThinStrokeWidth />,
-  },
-  {
-    id: StrokeWidth.Bold,
-    label: "Bold",
-    icon: <MediumStrokeWidth />,
-  },
-  {
-    id: StrokeWidth.ExtraBold,
-    label: "Extra Bold",
-    icon: <BoldStrokeWidth />,
-  },
-];
-
-export enum StrokeStyle {
-  Solid = "",
-  Dashed = "5 3",
-  Dotted = "2 3",
-}
-
-export const STROKE_STYLE_OPTIONS = [
-  {
-    id: StrokeStyle.Solid,
-    label: "Solid",
-    icon: <SolidStroke />,
-  },
-  {
-    id: StrokeStyle.Dashed,
-    label: "Dashed",
-    icon: <DashedStroke />,
-  },
-  {
-    id: StrokeStyle.Dotted,
-    label: "Dotted",
-    icon: <DottedStroke />,
-  },
-];
-
-export enum ShapeEdges {
-  Sharp = 0,
-  Round = 12,
-}
-
-export const SHAPE_EDGES_OPTIONS = [
-  {
-    id: ShapeEdges.Sharp,
-    label: "Sharp",
-    icon: <SharpEdges />,
-  },
-  {
-    id: ShapeEdges.Round,
-    label: "Round",
-    icon: <RoundEdges />,
-  },
-];
-
-export enum MiscActions {
-  Duplicate = "Duplicate",
-  Delete = "Delete",
-  Link = "Link",
-}
-
-export const MISC_ACTIONS_OPTIONS = [
-  {
-    id: MiscActions.Duplicate,
-    label: "Duplicate",
-    icon: <Duplicate />,
-  },
-  {
-    id: MiscActions.Delete,
-    label: "Delete",
-    icon: <Trash />,
-  },
-  {
-    id: MiscActions.Link,
-    label: "Link",
-    icon: <Link />,
-  },
-];
-
 export enum LayerOptions {
   SendBackward = "sendBackward",
   SendToBack = "sendToBack",
@@ -239,16 +114,6 @@ export const LAYER_OPTIONS = [
     icon: <SendToFront />,
   },
 ];
-
-export const BASE_FONT_SIZE = 16;
-export const SCALE_BY = 1.1;
-
-export enum CanvasAction {
-  Add = "add",
-  Delete = "delete",
-  Resize = "resize",
-  Drag = "drag",
-}
 
 export const ICON_FILL_COLOR = "#030064";
 
