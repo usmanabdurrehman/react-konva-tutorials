@@ -1,12 +1,14 @@
 import { Box, Flex, IconButton } from "@chakra-ui/react";
 import { KonvaEventObject, Node, NodeConfig } from "konva/lib/Node";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Stage, Layer, Transformer } from "react-konva";
+import { Stage, Layer, Transformer, Line } from "react-konva";
 import { DrawAction, DRAW_OPTIONS } from "../../constants";
 import { getNumericVal, getRelativePointerPosition } from "../../utilities";
 import { v4 as uuidv4 } from "uuid";
 import { Stage as StageType } from "konva/lib/Stage";
 import { Transformer as TransformerType } from "konva/lib/shapes/Transformer";
+import Crown from "../Crown/Crown";
+import { STROKE_COLOR, SCRIBBLE_BG } from "../../constants";
 
 interface DrawProps {}
 
@@ -20,6 +22,11 @@ export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
   const [drawAction, setDrawAction] = useState<DrawAction>(DrawAction.Crown);
 
   const [isDraggable, setIsDraggable] = useState(false);
+
+  const [currentlyDrawnShape, setCurrentlyDrawnShape] = useState<NodeConfig>();
+  const [drawings, setDrawings] = useState<NodeConfig[]>([]);
+
+  const isPaintRef = useRef(false);
 
   const [{ viewWidth, viewHeight }, setViewMeasures] = useState<{
     viewHeight: number | undefined;
@@ -38,7 +45,13 @@ export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
     }
   }, [containerRef]);
 
-  const onStageMouseUp = () => {};
+  const onStageMouseUp = () => {
+    isPaintRef.current = false;
+
+    if (currentlyDrawnShape)
+      setDrawings((prevDrawings) => [...prevDrawings, currentlyDrawnShape]);
+    setCurrentlyDrawnShape(undefined);
+  };
 
   const [currentSelectedShape, setCurrentSelectedShape] = useState<{
     node: Node<NodeConfig>;
@@ -70,6 +83,32 @@ export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
     const pos = getRelativePointerPosition(stage);
     const x = getNumericVal(pos?.x);
     const y = getNumericVal(pos?.y);
+
+    isPaintRef.current = true;
+
+    switch (drawAction) {
+      case DrawAction.Crown: {
+        setCurrentlyDrawnShape({
+          id,
+          x,
+          y,
+          height: 1,
+          width: 1,
+          name: DrawAction.Crown,
+        });
+        break;
+      }
+      case DrawAction.Scribble: {
+        setCurrentlyDrawnShape({
+          id,
+          points: [x, y, x, y],
+          name: DrawAction.Scribble,
+          stroke: STROKE_COLOR,
+          fill: SCRIBBLE_BG,
+        });
+        break;
+      }
+    }
   };
 
   const onStageMouseMove = (e: KonvaEventObject<MouseEvent>) => {
@@ -79,6 +118,26 @@ export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
     const pos = getRelativePointerPosition(stage);
     const x = getNumericVal(pos?.x);
     const y = getNumericVal(pos?.y);
+
+    if (!isPaintRef.current) return;
+
+    switch (drawAction) {
+      case DrawAction.Crown: {
+        setCurrentlyDrawnShape((prevCurrentlyDrawnShape) => ({
+          ...prevCurrentlyDrawnShape,
+          height: y - (prevCurrentlyDrawnShape?.y || 0),
+          width: x - (prevCurrentlyDrawnShape?.x || 0),
+        }));
+        break;
+      }
+      case DrawAction.Scribble: {
+        setCurrentlyDrawnShape((prevCurrentlyDrawnShape) => ({
+          ...prevCurrentlyDrawnShape,
+          points: [...(prevCurrentlyDrawnShape?.points || []), x, y],
+        }));
+        break;
+      }
+    }
   };
 
   const onShapeClick = (e: KonvaEventObject<MouseEvent>) => {
@@ -94,6 +153,8 @@ export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
     onClick: onShapeClick,
     draggable: isDraggable,
   };
+
+  console.log({ drawings });
 
   return (
     <Box ref={containerRef} pos="relative" height="100vh" width="100vw">
@@ -118,6 +179,19 @@ export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
           width={viewWidth}
         >
           <Layer>
+            {[...drawings, currentlyDrawnShape].map((drawing) => {
+              if (drawing?.name === DrawAction.Crown) {
+                return <Crown {...drawing} />;
+              }
+              if (drawing?.name === DrawAction.Scribble) {
+                return (
+                  <Line
+                    {...drawing}
+                    closed={drawing?.id !== currentlyDrawnShape?.id}
+                  />
+                );
+              }
+            })}
             <Transformer ref={transformerRef} rotateEnabled={false} />
           </Layer>
         </Stage>
