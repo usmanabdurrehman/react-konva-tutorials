@@ -8,7 +8,13 @@ import { v4 as uuidv4 } from "uuid";
 import { Stage as StageType } from "konva/lib/Stage";
 import { Transformer as TransformerType } from "konva/lib/shapes/Transformer";
 import Crown from "../Crown/Crown";
-import { STROKE_COLOR, SCRIBBLE_BG } from "../../constants";
+import {
+  STROKE_COLOR,
+  SCRIBBLE_BG,
+  MULTI_POINT_LINE_BG,
+} from "../../constants";
+import MultiPointLine from "../MultiPointLine/MultiPointLine";
+import { LineConfig } from "konva/lib/shapes/Line";
 
 interface DrawProps {}
 
@@ -27,6 +33,7 @@ export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
   const [drawings, setDrawings] = useState<NodeConfig[]>([]);
 
   const isPaintRef = useRef(false);
+  const numMultiPointRef = useRef(0);
 
   const [{ viewWidth, viewHeight }, setViewMeasures] = useState<{
     viewHeight: number | undefined;
@@ -46,6 +53,8 @@ export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
   }, [containerRef]);
 
   const onStageMouseUp = () => {
+    if (numMultiPointRef.current) return;
+
     isPaintRef.current = false;
 
     if (currentlyDrawnShape)
@@ -84,6 +93,40 @@ export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
     const x = getNumericVal(pos?.x);
     const y = getNumericVal(pos?.y);
 
+    if (drawAction === DrawAction.MultiPointLine) {
+      if (numMultiPointRef.current === 0) {
+        setCurrentlyDrawnShape({
+          id,
+          points: [x, y],
+          name: DrawAction.MultiPointLine,
+          stroke: STROKE_COLOR,
+          fill: MULTI_POINT_LINE_BG,
+        });
+      } else {
+        if (
+          numMultiPointRef.current >= 3 &&
+          currentlyDrawnShape?.points?.[0] ===
+            currentlyDrawnShape?.points?.at(-2) &&
+          currentlyDrawnShape?.points?.[1] ===
+            currentlyDrawnShape?.points?.at(-1)
+        ) {
+          if (currentlyDrawnShape)
+            setDrawings((prevDrawings) => [
+              ...prevDrawings,
+              currentlyDrawnShape,
+            ]);
+          setCurrentlyDrawnShape(undefined);
+          numMultiPointRef.current = 0;
+        }
+        setCurrentlyDrawnShape((prevLine: LineConfig) => ({
+          ...prevLine,
+          points: [...(prevLine?.points || []), x, y],
+        }));
+      }
+      numMultiPointRef.current += 1;
+      return;
+    }
+
     isPaintRef.current = true;
 
     switch (drawAction) {
@@ -118,6 +161,28 @@ export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
     const pos = getRelativePointerPosition(stage);
     const x = getNumericVal(pos?.x);
     const y = getNumericVal(pos?.y);
+
+    if (numMultiPointRef.current && drawAction === DrawAction.MultiPointLine) {
+      setCurrentlyDrawnShape((prevLine: LineConfig) => {
+        const prevPoints = [...(prevLine?.points || [])];
+        const pointsLength = numMultiPointRef.current;
+
+        if (
+          Math.abs(prevPoints?.[0] - x) < 7 &&
+          Math.abs(prevPoints?.[1] - y) < 7
+        ) {
+          prevPoints[pointsLength * 2] = prevPoints?.[0];
+          prevPoints[pointsLength * 2 + 1] = prevPoints?.[1];
+        } else {
+          prevPoints[pointsLength * 2] = x;
+          prevPoints[pointsLength * 2 + 1] = y;
+        }
+
+        return { ...prevLine, points: prevPoints };
+      });
+
+      return;
+    }
 
     if (!isPaintRef.current) return;
 
@@ -191,7 +256,31 @@ export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
                   />
                 );
               }
+              if (drawing?.name === DrawAction.MultiPointLine) {
+                return (
+                  <MultiPointLine
+                    {...drawing}
+                    closed={drawing?.id !== currentlyDrawnShape?.id}
+                    activatePoints={
+                      drawing?.id === currentlyDrawnShape?.id ||
+                      drawing?.id === currentSelectedShape?.attrs?.id
+                    }
+                    isSelected={drawing?.id === currentSelectedShape?.attrs?.id}
+                    onPointDrag={(newPoints) => {
+                      setDrawings((prevDrawings) =>
+                        prevDrawings.map((drawing) => {
+                          if (drawing.id === currentSelectedShape?.attrs?.id) {
+                            return { ...drawing, points: newPoints };
+                          } else return drawing;
+                        })
+                      );
+                    }}
+                    {...shapeProps}
+                  />
+                );
+              }
             })}
+
             <Transformer ref={transformerRef} rotateEnabled={false} />
           </Layer>
         </Stage>
