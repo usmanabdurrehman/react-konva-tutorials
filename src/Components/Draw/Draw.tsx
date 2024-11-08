@@ -1,4 +1,14 @@
-import { Box, ButtonGroup, Flex, IconButton } from "@chakra-ui/react";
+import {
+  Box,
+  ButtonGroup,
+  Flex,
+  IconButton,
+  Popover,
+  PopoverArrow,
+  PopoverCloseButton,
+  PopoverContent,
+  PopoverTrigger,
+} from "@chakra-ui/react";
 import { KonvaEventObject, Node, NodeConfig } from "konva/lib/Node";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -23,6 +33,7 @@ import { Stage as StageType } from "konva/lib/Stage";
 import { Transformer as TransformerType } from "konva/lib/shapes/Transformer";
 import { ImageConfig } from "konva/lib/shapes/Image";
 import { ArrowConfig } from "konva/lib/shapes/Arrow";
+import { SketchPicker } from "react-color";
 
 interface DrawProps {}
 
@@ -35,8 +46,6 @@ const downloadURI = (uri: string | undefined, name: string) => {
   document.body.removeChild(link);
 };
 
-const color = "black";
-
 export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -44,6 +53,7 @@ export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
 
   const transformerRef = useRef<TransformerType>(null);
 
+  const [color, setColor] = useState("black");
   const [drawAction, setDrawAction] = useState<DrawAction>(DrawAction.Scribble);
 
   const [currentlyDrawnShape, setCurrentlyDrawnShape] = useState<NodeConfig>();
@@ -118,9 +128,11 @@ export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
     transformerRef?.current?.nodes([]);
   }, []);
 
+  const bgRef = useRef(null);
+
   const checkDeselect = useCallback(
     (e: KonvaEventObject<MouseEvent>) => {
-      const clickedOnEmpty = e.target === stageRef?.current;
+      const clickedOnEmpty = e.target === bgRef?.current;
       if (clickedOnEmpty) {
         deSelect();
       }
@@ -252,8 +264,6 @@ export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
     draggable: drawAction === DrawAction.Select,
   };
 
-  console.log({ drawings });
-
   const onDelete = () => {
     setDrawings((prevDrawings) =>
       prevDrawings.filter(
@@ -281,7 +291,13 @@ export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
   };
 
   return (
-    <Box ref={containerRef} pos="relative" height="100vh" width="100vw">
+    <Box
+      ref={containerRef}
+      pos="relative"
+      height="100vh"
+      width="100vw"
+      overflow={"hidden"}
+    >
       <Flex gap={4} pos="absolute" top={2} left={2} zIndex={1}>
         <ButtonGroup size="sm" isAttached variant="solid">
           {DRAW_OPTIONS.map(({ id, icon }) => (
@@ -312,6 +328,26 @@ export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
           ))}
         </ButtonGroup>
 
+        <Popover>
+          <PopoverTrigger>
+            <Box
+              bg={color}
+              h={"30px"}
+              w={"30px"}
+              borderRadius="8px"
+              cursor="pointer"
+            ></Box>
+          </PopoverTrigger>
+          <PopoverContent width="300">
+            <PopoverArrow />
+            <PopoverCloseButton />
+            <SketchPicker
+              color={color}
+              onChangeComplete={(selectedColor) => setColor(selectedColor.hex)}
+            />
+          </PopoverContent>
+        </Popover>
+
         <input
           type="file"
           ref={fileRef}
@@ -330,6 +366,14 @@ export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
         width={viewWidth}
       >
         <Layer>
+          <Rect
+            x={0}
+            y={0}
+            width={viewWidth}
+            height={viewHeight}
+            fill="white"
+            ref={bgRef}
+          />
           {[...drawings, currentlyDrawnShape].map((drawing) => {
             if (drawing?.name === DrawAction.Scribble) {
               return <Line {...drawing} {...shapeProps} />;
