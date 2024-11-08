@@ -1,22 +1,41 @@
-import { Box, Flex, IconButton } from "@chakra-ui/react";
+import { Box, ButtonGroup, Flex, IconButton } from "@chakra-ui/react";
 import { KonvaEventObject, Node, NodeConfig } from "konva/lib/Node";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Stage, Layer, Transformer, Line } from "react-konva";
-import { DrawAction, DRAW_OPTIONS } from "../../constants";
+import {
+  Stage,
+  Layer,
+  Transformer,
+  Line,
+  Image as KonvaImage,
+  Circle,
+  Rect,
+  Arrow,
+} from "react-konva";
+import {
+  DrawAction,
+  DRAW_OPTIONS,
+  MISC_OPTIONS,
+  MiscAction,
+} from "../../constants";
 import { getNumericVal, getRelativePointerPosition } from "../../utilities";
 import { v4 as uuidv4 } from "uuid";
 import { Stage as StageType } from "konva/lib/Stage";
 import { Transformer as TransformerType } from "konva/lib/shapes/Transformer";
-import Crown from "../Crown/Crown";
-import {
-  STROKE_COLOR,
-  SCRIBBLE_BG,
-  MULTI_POINT_LINE_BG,
-} from "../../constants";
-import MultiPointLine from "../MultiPointLine/MultiPointLine";
-import { LineConfig } from "konva/lib/shapes/Line";
+import { ImageConfig } from "konva/lib/shapes/Image";
+import { ArrowConfig } from "konva/lib/shapes/Arrow";
 
 interface DrawProps {}
+
+const downloadURI = (uri: string | undefined, name: string) => {
+  const link = document.createElement("a");
+  link.download = name;
+  link.href = uri || "";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+const color = "black";
 
 export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -25,15 +44,50 @@ export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
 
   const transformerRef = useRef<TransformerType>(null);
 
-  const [drawAction, setDrawAction] = useState<DrawAction>(DrawAction.Crown);
-
-  const [isDraggable, setIsDraggable] = useState(false);
+  const [drawAction, setDrawAction] = useState<DrawAction>(DrawAction.Scribble);
 
   const [currentlyDrawnShape, setCurrentlyDrawnShape] = useState<NodeConfig>();
   const [drawings, setDrawings] = useState<NodeConfig[]>([]);
 
   const isPaintRef = useRef(false);
-  const numMultiPointRef = useRef(0);
+
+  const onImportImageSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files?.[0]) {
+        const imageUrl = URL.createObjectURL(e.target.files?.[0]);
+        const image = new Image(200, 200);
+        image.src = imageUrl;
+        setDrawings((prevDrawings) => [
+          ...prevDrawings,
+          {
+            id: uuidv4(),
+            name: DrawAction.Image,
+            image,
+            x: 0,
+            y: 0,
+            height: 200,
+            width: 200,
+          },
+        ]);
+      }
+      e.target.files = null;
+    },
+    []
+  );
+
+  const fileRef = useRef<HTMLInputElement>(null);
+  const onImportImageClick = useCallback(() => {
+    fileRef?.current && fileRef?.current?.click();
+  }, []);
+
+  const onExportClick = useCallback(() => {
+    const dataUri = stageRef?.current?.toDataURL({ pixelRatio: 3 });
+    downloadURI(dataUri, "image.png");
+  }, []);
+
+  const onClear = useCallback(() => {
+    setDrawings([]);
+  }, []);
 
   const [{ viewWidth, viewHeight }, setViewMeasures] = useState<{
     viewHeight: number | undefined;
@@ -53,8 +107,6 @@ export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
   }, [containerRef]);
 
   const onStageMouseUp = () => {
-    if (numMultiPointRef.current) return;
-
     isPaintRef.current = false;
 
     if (currentlyDrawnShape)
@@ -62,15 +114,8 @@ export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
     setCurrentlyDrawnShape(undefined);
   };
 
-  const [currentSelectedShape, setCurrentSelectedShape] = useState<{
-    node: Node<NodeConfig>;
-    attrs?: NodeConfig;
-  }>();
-
   const deSelect = useCallback(() => {
     transformerRef?.current?.nodes([]);
-    setIsDraggable(false);
-    setCurrentSelectedShape(undefined);
   }, []);
 
   const checkDeselect = useCallback(
@@ -86,68 +131,55 @@ export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
   const onStageMouseDown = (e: KonvaEventObject<MouseEvent>) => {
     checkDeselect(e);
     const stage = stageRef?.current;
-    if (e.evt.button !== 0 || !stage) return;
+    if (e.evt.button !== 0 || !stage || drawAction === DrawAction.Select)
+      return;
     const id = uuidv4();
 
     const pos = getRelativePointerPosition(stage);
     const x = getNumericVal(pos?.x);
     const y = getNumericVal(pos?.y);
 
-    if (drawAction === DrawAction.MultiPointLine) {
-      if (numMultiPointRef.current === 0) {
-        setCurrentlyDrawnShape({
-          id,
-          points: [x, y],
-          name: DrawAction.MultiPointLine,
-          stroke: STROKE_COLOR,
-          fill: MULTI_POINT_LINE_BG,
-        });
-      } else {
-        if (
-          numMultiPointRef.current >= 3 &&
-          currentlyDrawnShape?.points?.[0] ===
-            currentlyDrawnShape?.points?.at(-2) &&
-          currentlyDrawnShape?.points?.[1] ===
-            currentlyDrawnShape?.points?.at(-1)
-        ) {
-          if (currentlyDrawnShape)
-            setDrawings((prevDrawings) => [
-              ...prevDrawings,
-              currentlyDrawnShape,
-            ]);
-          setCurrentlyDrawnShape(undefined);
-          numMultiPointRef.current = 0;
-        }
-        setCurrentlyDrawnShape((prevLine: LineConfig) => ({
-          ...prevLine,
-          points: [...(prevLine?.points || []), x, y],
-        }));
-      }
-      numMultiPointRef.current += 1;
-      return;
-    }
-
     isPaintRef.current = true;
 
     switch (drawAction) {
-      case DrawAction.Crown: {
-        setCurrentlyDrawnShape({
-          id,
-          x,
-          y,
-          height: 1,
-          width: 1,
-          name: DrawAction.Crown,
-        });
-        break;
-      }
       case DrawAction.Scribble: {
         setCurrentlyDrawnShape({
           id,
           points: [x, y, x, y],
           name: DrawAction.Scribble,
-          stroke: STROKE_COLOR,
-          fill: SCRIBBLE_BG,
+          stroke: color,
+        });
+        break;
+      }
+      case DrawAction.Circle: {
+        setCurrentlyDrawnShape({
+          id,
+          radius: 1,
+          x,
+          y,
+          name: DrawAction.Circle,
+          stroke: color,
+        });
+        break;
+      }
+      case DrawAction.Rectangle: {
+        setCurrentlyDrawnShape({
+          id,
+          height: 1,
+          width: 1,
+          x,
+          y,
+          name: DrawAction.Rectangle,
+          stroke: color,
+        });
+        break;
+      }
+      case DrawAction.Arrow: {
+        setCurrentlyDrawnShape({
+          id,
+          points: [x, y, x, y],
+          name: DrawAction.Arrow,
+          stroke: color,
         });
         break;
       }
@@ -156,45 +188,16 @@ export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
 
   const onStageMouseMove = (e: KonvaEventObject<MouseEvent>) => {
     const stage = stageRef?.current;
-    if (e.evt.button !== 0 || !stage) return;
+    if (e.evt.button !== 0 || !stage || drawAction === DrawAction.Select)
+      return;
 
     const pos = getRelativePointerPosition(stage);
     const x = getNumericVal(pos?.x);
     const y = getNumericVal(pos?.y);
 
-    if (numMultiPointRef.current && drawAction === DrawAction.MultiPointLine) {
-      setCurrentlyDrawnShape((prevLine: LineConfig) => {
-        const prevPoints = [...(prevLine?.points || [])];
-        const pointsLength = numMultiPointRef.current;
-
-        if (
-          Math.abs(prevPoints?.[0] - x) < 7 &&
-          Math.abs(prevPoints?.[1] - y) < 7
-        ) {
-          prevPoints[pointsLength * 2] = prevPoints?.[0];
-          prevPoints[pointsLength * 2 + 1] = prevPoints?.[1];
-        } else {
-          prevPoints[pointsLength * 2] = x;
-          prevPoints[pointsLength * 2 + 1] = y;
-        }
-
-        return { ...prevLine, points: prevPoints };
-      });
-
-      return;
-    }
-
     if (!isPaintRef.current) return;
 
     switch (drawAction) {
-      case DrawAction.Crown: {
-        setCurrentlyDrawnShape((prevCurrentlyDrawnShape) => ({
-          ...prevCurrentlyDrawnShape,
-          height: y - (prevCurrentlyDrawnShape?.y || 0),
-          width: x - (prevCurrentlyDrawnShape?.x || 0),
-        }));
-        break;
-      }
       case DrawAction.Scribble: {
         setCurrentlyDrawnShape((prevCurrentlyDrawnShape) => ({
           ...prevCurrentlyDrawnShape,
@@ -202,89 +205,155 @@ export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
         }));
         break;
       }
+      case DrawAction.Rectangle: {
+        setCurrentlyDrawnShape((prevCurrentlyDrawnShape) => ({
+          ...prevCurrentlyDrawnShape,
+          height: y - (prevCurrentlyDrawnShape?.y || 0),
+          width: x - (prevCurrentlyDrawnShape?.x || 0),
+        }));
+        break;
+      }
+      case DrawAction.Arrow: {
+        setCurrentlyDrawnShape((prevCurrentlyDrawnShape) => ({
+          ...prevCurrentlyDrawnShape,
+          points: [
+            prevCurrentlyDrawnShape?.points[0],
+            prevCurrentlyDrawnShape?.points[1],
+            x,
+            y,
+          ],
+        }));
+        break;
+      }
+      case DrawAction.Circle: {
+        setCurrentlyDrawnShape((prevCurrentlyDrawnShape) => ({
+          ...prevCurrentlyDrawnShape,
+          radius:
+            ((x - (prevCurrentlyDrawnShape?.x || 0)) ** 2 +
+              (y - (prevCurrentlyDrawnShape?.y || 0)) ** 2) **
+            0.5,
+        }));
+        break;
+      }
     }
   };
+
+  const currentSelectedShapeRef = useRef<string | null>(null);
 
   const onShapeClick = (e: KonvaEventObject<MouseEvent>) => {
     if (drawAction !== DrawAction.Select) return;
     const node = e.currentTarget;
-    setCurrentSelectedShape({ node, attrs: node.attrs });
-
-    setIsDraggable(true);
+    currentSelectedShapeRef.current = node?.attrs?.id;
     transformerRef.current?.nodes([node]);
   };
 
   const shapeProps = {
     onClick: onShapeClick,
-    draggable: isDraggable,
+    draggable: drawAction === DrawAction.Select,
   };
 
   console.log({ drawings });
 
+  const onDelete = () => {
+    setDrawings((prevDrawings) =>
+      prevDrawings.filter(
+        (drawing) => drawing.id !== currentSelectedShapeRef.current
+      )
+    );
+    transformerRef?.current?.nodes([]);
+  };
+
+  const onMiscAction = (action: MiscAction) => {
+    switch (action) {
+      case MiscAction.Clear: {
+        onClear();
+        break;
+      }
+      case MiscAction.Export: {
+        onExportClick();
+        break;
+      }
+      case MiscAction.Delete: {
+        onDelete();
+        break;
+      }
+    }
+  };
+
   return (
     <Box ref={containerRef} pos="relative" height="100vh" width="100vw">
-      <Flex gap={2} pos="absolute" top={2} left={2} zIndex={1}>
-        {DRAW_OPTIONS.map(({ id, icon }) => (
-          <IconButton
-            aria-label="Drawing Options"
-            icon={icon}
-            onClick={() => setDrawAction(id)}
-            size="sm"
-            colorScheme={id === drawAction ? "whatsapp" : undefined}
-          />
-        ))}
-      </Flex>
-      <Box height="100%" width="100%">
-        <Stage
-          ref={stageRef}
-          onMouseUp={onStageMouseUp}
-          onMouseDown={onStageMouseDown}
-          onMouseMove={onStageMouseMove}
-          height={viewHeight}
-          width={viewWidth}
-        >
-          <Layer>
-            {[...drawings, currentlyDrawnShape].map((drawing) => {
-              if (drawing?.name === DrawAction.Crown) {
-                return <Crown {...drawing} />;
-              }
-              if (drawing?.name === DrawAction.Scribble) {
-                return (
-                  <Line
-                    {...drawing}
-                    closed={drawing?.id !== currentlyDrawnShape?.id}
-                  />
-                );
-              }
-              if (drawing?.name === DrawAction.MultiPointLine) {
-                return (
-                  <MultiPointLine
-                    {...drawing}
-                    closed={drawing?.id !== currentlyDrawnShape?.id}
-                    activatePoints={
-                      drawing?.id === currentlyDrawnShape?.id ||
-                      drawing?.id === currentSelectedShape?.attrs?.id
-                    }
-                    isSelected={drawing?.id === currentSelectedShape?.attrs?.id}
-                    onPointDrag={(newPoints) => {
-                      setDrawings((prevDrawings) =>
-                        prevDrawings.map((drawing) => {
-                          if (drawing.id === currentSelectedShape?.attrs?.id) {
-                            return { ...drawing, points: newPoints };
-                          } else return drawing;
-                        })
-                      );
-                    }}
-                    {...shapeProps}
-                  />
-                );
-              }
-            })}
+      <Flex gap={4} pos="absolute" top={2} left={2} zIndex={1}>
+        <ButtonGroup size="sm" isAttached variant="solid">
+          {DRAW_OPTIONS.map(({ id, icon }) => (
+            <IconButton
+              aria-label="Drawing Options"
+              icon={icon}
+              onClick={() => {
+                if (id === DrawAction.Image) {
+                  onImportImageClick();
+                  return;
+                }
+                setDrawAction(id);
+              }}
+              size="sm"
+              colorScheme={id === drawAction ? "whatsapp" : undefined}
+            />
+          ))}
+        </ButtonGroup>
 
-            <Transformer ref={transformerRef} rotateEnabled={false} />
-          </Layer>
-        </Stage>
-      </Box>
+        <ButtonGroup size="sm" isAttached variant="solid">
+          {MISC_OPTIONS.map(({ id, icon }) => (
+            <IconButton
+              aria-label="Misc Options"
+              icon={icon}
+              onClick={() => onMiscAction(id)}
+              size="sm"
+            />
+          ))}
+        </ButtonGroup>
+
+        <input
+          type="file"
+          ref={fileRef}
+          onChange={onImportImageSelect}
+          style={{ display: "none" }}
+          accept="image/*"
+        />
+      </Flex>
+
+      <Stage
+        ref={stageRef}
+        onMouseUp={onStageMouseUp}
+        onMouseDown={onStageMouseDown}
+        onMouseMove={onStageMouseMove}
+        height={viewHeight}
+        width={viewWidth}
+      >
+        <Layer>
+          {[...drawings, currentlyDrawnShape].map((drawing) => {
+            if (drawing?.name === DrawAction.Scribble) {
+              return <Line {...drawing} {...shapeProps} />;
+            }
+            if (drawing?.name === DrawAction.Circle) {
+              return <Circle {...drawing} {...shapeProps} />;
+            }
+            if (drawing?.name === DrawAction.Rectangle) {
+              return <Rect {...drawing} {...shapeProps} />;
+            }
+            if (drawing?.name === DrawAction.Arrow) {
+              return <Arrow {...(drawing as ArrowConfig)} {...shapeProps} />;
+            }
+            if (drawing?.name === DrawAction.Image) {
+              return (
+                <KonvaImage {...(drawing as ImageConfig)} {...shapeProps} />
+              );
+            }
+            return null;
+          })}
+
+          <Transformer ref={transformerRef} />
+        </Layer>
+      </Stage>
     </Box>
   );
 });
