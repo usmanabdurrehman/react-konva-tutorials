@@ -147,9 +147,9 @@ export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
       return;
     const id = uuidv4();
 
-    const pos = getRelativePointerPosition(stage);
-    const x = getNumericVal(pos?.x);
-    const y = getNumericVal(pos?.y);
+    const pos = stage?.getPointerPosition();
+    const x = pos?.x || 0;
+    const y = pos?.y || 0;
 
     isPaintRef.current = true;
 
@@ -203,9 +203,9 @@ export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
     if (e.evt.button !== 0 || !stage || drawAction === DrawAction.Select)
       return;
 
-    const pos = getRelativePointerPosition(stage);
-    const x = getNumericVal(pos?.x);
-    const y = getNumericVal(pos?.y);
+    const pos = stage?.getPointerPosition();
+    const x = pos?.x || 0;
+    const y = pos?.y || 0;
 
     if (!isPaintRef.current) return;
 
