@@ -1,6 +1,5 @@
 import {
   ArrowUpLeft,
-  ArrowUpRight,
   ArrowUpRightSquareFill,
   Circle,
   Download,

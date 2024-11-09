@@ -9,190 +9,123 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@chakra-ui/react";
-import { KonvaEventObject, Node, NodeConfig } from "konva/lib/Node";
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import {
-  Stage,
-  Layer,
-  Transformer,
-  Line,
-  Image as KonvaImage,
-  Circle,
-  Rect,
-  Arrow,
-} from "react-konva";
+import React, { useRef, useState } from "react";
 import {
   DrawAction,
   DRAW_OPTIONS,
   MISC_OPTIONS,
   MiscAction,
 } from "../../constants";
-import { getNumericVal, getRelativePointerPosition } from "../../utilities";
-import { v4 as uuidv4 } from "uuid";
-import { Stage as StageType } from "konva/lib/Stage";
-import { Transformer as TransformerType } from "konva/lib/shapes/Transformer";
-import { ImageConfig } from "konva/lib/shapes/Image";
-import { ArrowConfig } from "konva/lib/shapes/Arrow";
 import { SketchPicker } from "react-color";
+import {
+  Arrow,
+  Circle,
+  Image as ReactImage,
+  Layer,
+  Line,
+  Rect,
+  Stage,
+  Transformer,
+} from "react-konva";
+import { KonvaEventObject, NodeConfig } from "konva/lib/Node";
+import { Stage as StageType } from "konva/lib/Stage";
+import { ArrowConfig } from "konva/lib/shapes/Arrow";
+import { ImageConfig } from "konva/lib/shapes/Image";
+import { Transformer as TransformerType } from "konva/lib/shapes/Transformer";
+import { v4 as uuidv4 } from "uuid";
 
 interface DrawProps {}
 
-const downloadURI = (uri: string | undefined, name: string) => {
-  const link = document.createElement("a");
-  link.download = name;
-  link.href = uri || "";
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+const downloadImage = (uri: string) => {
+  const a = document.createElement("a");
+  a.download = "image.png";
+  a.href = uri;
+  a.click();
 };
 
 export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const stageRef = useRef<StageType | null>(null);
-
-  const transformerRef = useRef<TransformerType>(null);
-
   const [color, setColor] = useState("black");
   const [drawAction, setDrawAction] = useState<DrawAction>(DrawAction.Scribble);
+
+  const stageRef = useRef<StageType | null>(null);
+  const transformerRef = useRef<TransformerType>(null);
+  const isPaintRef = useRef(false);
 
   const [currentlyDrawnShape, setCurrentlyDrawnShape] = useState<NodeConfig>();
   const [drawings, setDrawings] = useState<NodeConfig[]>([]);
 
-  const isPaintRef = useRef(false);
-
-  const onImportImageSelect = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (e.target.files?.[0]) {
-        const imageUrl = URL.createObjectURL(e.target.files?.[0]);
-        const image = new Image(200, 200);
-        image.src = imageUrl;
-        setDrawings((prevDrawings) => [
-          ...prevDrawings,
-          {
-            id: uuidv4(),
-            name: DrawAction.Image,
-            image,
-            x: 0,
-            y: 0,
-            height: 200,
-            width: 200,
-          },
-        ]);
-      }
-      e.target.files = null;
-    },
-    []
-  );
-
-  const fileRef = useRef<HTMLInputElement>(null);
-  const onImportImageClick = useCallback(() => {
-    fileRef?.current && fileRef?.current?.click();
-  }, []);
-
-  const onExportClick = useCallback(() => {
-    const dataUri = stageRef?.current?.toDataURL({ pixelRatio: 3 });
-    downloadURI(dataUri, "image.png");
-  }, []);
-
-  const onClear = useCallback(() => {
-    setDrawings([]);
-  }, []);
-
-  const [{ viewWidth, viewHeight }, setViewMeasures] = useState<{
-    viewHeight: number | undefined;
-    viewWidth: number | undefined;
-  }>({
-    viewHeight: undefined,
-    viewWidth: undefined,
-  });
-
-  useEffect(() => {
-    if (containerRef.current) {
-      setViewMeasures({
-        viewHeight: containerRef.current.offsetHeight,
-        viewWidth: containerRef.current.offsetWidth,
-      });
-    }
-  }, [containerRef]);
-
   const onStageMouseUp = () => {
     isPaintRef.current = false;
 
-    if (currentlyDrawnShape)
+    if (currentlyDrawnShape) {
       setDrawings((prevDrawings) => [...prevDrawings, currentlyDrawnShape]);
-    setCurrentlyDrawnShape(undefined);
+      setCurrentlyDrawnShape(undefined);
+    }
   };
 
-  const deSelect = useCallback(() => {
-    transformerRef?.current?.nodes([]);
-  }, []);
-
-  const bgRef = useRef(null);
-
-  const checkDeselect = useCallback(
-    (e: KonvaEventObject<MouseEvent>) => {
-      const clickedOnEmpty = e.target === bgRef?.current;
-      if (clickedOnEmpty) {
-        deSelect();
-      }
-    },
-    [stageRef, deSelect]
-  );
+  const checkDeSelect = (e: KonvaEventObject<MouseEvent>) => {
+    if (e.target === stageRef?.current) {
+      transformerRef?.current?.nodes([]);
+    }
+  };
 
   const onStageMouseDown = (e: KonvaEventObject<MouseEvent>) => {
-    checkDeselect(e);
+    checkDeSelect(e);
     const stage = stageRef?.current;
     if (e.evt.button !== 0 || !stage || drawAction === DrawAction.Select)
       return;
-    const id = uuidv4();
-
     const pos = stage?.getPointerPosition();
     const x = pos?.x || 0;
     const y = pos?.y || 0;
+    const id = uuidv4();
 
     isPaintRef.current = true;
-
     switch (drawAction) {
-      case DrawAction.Scribble: {
+      case DrawAction.Arrow: {
         setCurrentlyDrawnShape({
-          id,
+          name: DrawAction.Arrow,
           points: [x, y, x, y],
-          name: DrawAction.Scribble,
           stroke: color,
-        });
-        break;
-      }
-      case DrawAction.Circle: {
-        setCurrentlyDrawnShape({
           id,
-          radius: 1,
-          x,
-          y,
-          name: DrawAction.Circle,
-          stroke: color,
         });
+
         break;
       }
       case DrawAction.Rectangle: {
         setCurrentlyDrawnShape({
-          id,
-          height: 1,
-          width: 1,
+          name: DrawAction.Rectangle,
           x,
           y,
-          name: DrawAction.Rectangle,
+          heigth: 1,
+          width: 1,
           stroke: color,
+          id,
         });
+
         break;
       }
-      case DrawAction.Arrow: {
+      case DrawAction.Circle: {
         setCurrentlyDrawnShape({
-          id,
-          points: [x, y, x, y],
-          name: DrawAction.Arrow,
+          name: DrawAction.Circle,
+          x,
+          y,
+          radius: 1,
           stroke: color,
+          id,
         });
+
+        break;
+      }
+      case DrawAction.Scribble: {
+        setCurrentlyDrawnShape({
+          name: DrawAction.Scribble,
+          points: [x, y, x, y],
+          stroke: color,
+          id,
+        });
+
         break;
       }
     }
@@ -202,7 +135,6 @@ export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
     const stage = stageRef?.current;
     if (e.evt.button !== 0 || !stage || drawAction === DrawAction.Select)
       return;
-
     const pos = stage?.getPointerPosition();
     const x = pos?.x || 0;
     const y = pos?.y || 0;
@@ -210,11 +142,25 @@ export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
     if (!isPaintRef.current) return;
 
     switch (drawAction) {
+      case DrawAction.Arrow: {
+        setCurrentlyDrawnShape((prevCurrentlyDrawnShape) => ({
+          ...prevCurrentlyDrawnShape,
+          points: [
+            prevCurrentlyDrawnShape?.points?.[0],
+            prevCurrentlyDrawnShape?.points?.[1],
+            x,
+            y,
+          ],
+        }));
+
+        break;
+      }
       case DrawAction.Scribble: {
         setCurrentlyDrawnShape((prevCurrentlyDrawnShape) => ({
           ...prevCurrentlyDrawnShape,
           points: [...(prevCurrentlyDrawnShape?.points || []), x, y],
         }));
+
         break;
       }
       case DrawAction.Rectangle: {
@@ -223,18 +169,7 @@ export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
           height: y - (prevCurrentlyDrawnShape?.y || 0),
           width: x - (prevCurrentlyDrawnShape?.x || 0),
         }));
-        break;
-      }
-      case DrawAction.Arrow: {
-        setCurrentlyDrawnShape((prevCurrentlyDrawnShape) => ({
-          ...prevCurrentlyDrawnShape,
-          points: [
-            prevCurrentlyDrawnShape?.points[0],
-            prevCurrentlyDrawnShape?.points[1],
-            x,
-            y,
-          ],
-        }));
+
         break;
       }
       case DrawAction.Circle: {
@@ -245,24 +180,40 @@ export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
               (y - (prevCurrentlyDrawnShape?.y || 0)) ** 2) **
             0.5,
         }));
+
         break;
       }
     }
   };
 
-  const currentSelectedShapeRef = useRef<string | null>(null);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const onInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      const image = new Image(200, 200);
+      image.src = url;
 
-  const onShapeClick = (e: KonvaEventObject<MouseEvent>) => {
-    if (drawAction !== DrawAction.Select) return;
-    const node = e.currentTarget;
-    currentSelectedShapeRef.current = node?.attrs?.id;
-    transformerRef.current?.nodes([node]);
+      setDrawings((prevDrawings) => [
+        ...prevDrawings,
+        {
+          name: DrawAction.Image,
+          x: 0,
+          y: 0,
+          image,
+          height: 200,
+          width: 200,
+          id: uuidv4(),
+        },
+      ]);
+    }
   };
 
-  const shapeProps = {
-    onClick: onShapeClick,
-    draggable: drawAction === DrawAction.Select,
+  const onClear = () => {
+    setDrawings([]);
   };
+
+  const currentSelectedShapeRef = useRef<string>();
 
   const onDelete = () => {
     setDrawings((prevDrawings) =>
@@ -273,21 +224,38 @@ export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
     transformerRef?.current?.nodes([]);
   };
 
-  const onMiscAction = (action: MiscAction) => {
-    switch (action) {
+  const onExport = () => {
+    const dataURI = stageRef?.current?.toDataURL({ pixelRatio: 3 });
+    downloadImage(dataURI || "");
+  };
+
+  const onMiscChange = (id: MiscAction) => {
+    switch (id) {
       case MiscAction.Clear: {
         onClear();
-        break;
-      }
-      case MiscAction.Export: {
-        onExportClick();
         break;
       }
       case MiscAction.Delete: {
         onDelete();
         break;
       }
+      case MiscAction.Export: {
+        onExport();
+        break;
+      }
     }
+  };
+
+  const onShapeClick = (e: KonvaEventObject<MouseEvent>) => {
+    if (drawAction !== DrawAction.Select) return;
+    const node = e.currentTarget;
+    currentSelectedShapeRef.current = node?.attrs?.id;
+    transformerRef?.current?.nodes([node]);
+  };
+
+  const shapeProps = {
+    onClick: onShapeClick,
+    draggable: drawAction === DrawAction.Select,
   };
 
   return (
@@ -306,10 +274,10 @@ export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
               icon={icon}
               onClick={() => {
                 if (id === DrawAction.Image) {
-                  onImportImageClick();
-                  return;
+                  fileRef?.current?.click();
+                } else {
+                  setDrawAction(id);
                 }
-                setDrawAction(id);
               }}
               size="sm"
               colorScheme={id === drawAction ? "whatsapp" : undefined}
@@ -317,12 +285,20 @@ export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
           ))}
         </ButtonGroup>
 
+        <input
+          type="file"
+          ref={fileRef}
+          accept="image/*"
+          style={{ display: "none" }}
+          onChange={onInputChange}
+        />
+
         <ButtonGroup size="sm" isAttached variant="solid">
           {MISC_OPTIONS.map(({ id, icon }) => (
             <IconButton
               aria-label="Misc Options"
               icon={icon}
-              onClick={() => onMiscAction(id)}
+              onClick={() => onMiscChange(id)}
               size="sm"
             />
           ))}
@@ -347,54 +323,36 @@ export const Draw: React.FC<DrawProps> = React.memo(function Draw({}) {
             />
           </PopoverContent>
         </Popover>
-
-        <input
-          type="file"
-          ref={fileRef}
-          onChange={onImportImageSelect}
-          style={{ display: "none" }}
-          accept="image/*"
-        />
       </Flex>
-
       <Stage
         ref={stageRef}
-        onMouseUp={onStageMouseUp}
         onMouseDown={onStageMouseDown}
         onMouseMove={onStageMouseMove}
-        height={viewHeight}
-        width={viewWidth}
+        onMouseUp={onStageMouseUp}
+        height={window.innerHeight}
+        width={window.innerWidth}
       >
         <Layer>
           <Rect
             x={0}
             y={0}
-            width={viewWidth}
-            height={viewHeight}
             fill="white"
-            ref={bgRef}
+            height={window.innerHeight}
+            width={window.innerWidth}
           />
-          {[...drawings, currentlyDrawnShape].map((drawing) => {
-            if (drawing?.name === DrawAction.Scribble) {
-              return <Line {...drawing} {...shapeProps} />;
-            }
-            if (drawing?.name === DrawAction.Circle) {
-              return <Circle {...drawing} {...shapeProps} />;
-            }
-            if (drawing?.name === DrawAction.Rectangle) {
-              return <Rect {...drawing} {...shapeProps} />;
-            }
-            if (drawing?.name === DrawAction.Arrow) {
-              return <Arrow {...(drawing as ArrowConfig)} {...shapeProps} />;
-            }
-            if (drawing?.name === DrawAction.Image) {
-              return (
-                <KonvaImage {...(drawing as ImageConfig)} {...shapeProps} />
-              );
-            }
+          {[...drawings, currentlyDrawnShape].map((shape) => {
+            if (shape?.name === DrawAction.Arrow)
+              return <Arrow {...(shape as ArrowConfig)} {...shapeProps} />;
+            if (shape?.name === DrawAction.Rectangle)
+              return <Rect {...shape} {...shapeProps} />;
+            if (shape?.name === DrawAction.Circle)
+              return <Circle {...shape} {...shapeProps} />;
+            if (shape?.name === DrawAction.Scribble)
+              return <Line {...shape} {...shapeProps} />;
+            if (shape?.name === DrawAction.Image)
+              return <ReactImage {...(shape as ImageConfig)} {...shapeProps} />;
             return null;
           })}
-
           <Transformer ref={transformerRef} />
         </Layer>
       </Stage>
